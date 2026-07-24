@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Courses{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Manage Courses</h2>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if courses %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Teacher</th>
+                            <th>Class Level</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                            <tr>
+                                <td><strong>{{ course.course_code }}</strong></td>
+                                <td>{{ course.course_name }}</td>
+                                <td>{{ course.teacher.user.full_name }}</td>
+                                <td>{{ course.class_level }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if course.is_active else 'danger' }}">
+                                        {{ 'Active' if course.is_active else 'Inactive' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button onclick="deleteCourse({{ course.id }})" 
+                                            class="btn btn-sm btn-danger"
+                                            title="Delete Course">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted">No courses found.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function deleteCourse(courseId) {
+    if (confirm('Are you sure you want to delete this course?\n\nThis action CANNOT be undone!')) {
+        fetch(`/admin/course/${courseId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}',
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Error deleting course');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

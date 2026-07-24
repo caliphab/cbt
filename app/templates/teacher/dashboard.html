@@ -1,0 +1,74 @@
+
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white mb-3">
+            <div class="card-body">
+                <h5>Welcome, {{ current_user.full_name }}</h5>
+                <p>Staff ID: {{ teacher.staff_id }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3>{{ total_courses }}</h3>
+                        <p>Courses</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3>{{ total_exams }}</h3>
+                        <p>Exams</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3>{{ total_questions }}</h3>
+                        <p>Questions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Your Courses</h5>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                    <ul>
+                    {% for course in courses %}
+                        <li>{{ course.course_code }} - {{ course.course_name }}</li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No courses yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('teacher.create_exam') }}" class="btn btn-success w-100 mb-2">Create Exam</a>
+                <a href="{{ url_for('teacher.create_question') }}" class="btn btn-info w-100 mb-2">Add Question</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

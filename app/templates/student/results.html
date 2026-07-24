@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Results - {{ exam.exam_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4>{{ exam.exam_title }} - Results</h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3>{{ "%.1f"|format(attempt.score) if attempt.score else 0 }}</h3>
+                                <p class="text-muted">Score</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3>{{ "%.1f"|format(attempt.total_score) if attempt.total_score else 0 }}</h3>
+                                <p class="text-muted">Total Possible</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3>{{ "%.1f"|format((attempt.score / attempt.total_score * 100) if attempt.total_score else 0) }}%</h3>
+                                <p class="text-muted">Percentage</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3>
+                                    <span class="badge bg-{{ 'success' if attempt.grade and attempt.grade != 'F' else 'danger' }}">
+                                        {{ attempt.grade or 'N/A' }}
+                                    </span>
+                                </h3>
+                                <p class="text-muted">Grade</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5>Your Answers</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Question</th>
+                                <th>Your Answer</th>
+                                <th>Correct Answer</th>
+                                <th>Result</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for answer in answers %}
+                                <tr class="{{ 'table-success' if answer.is_correct else 'table-danger' if answer.is_correct is not none else '' }}">
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ answer.question.question_text|truncate(100) }}</td>
+                                    <td>{{ answer.selected_answer or 'Not answered' }}</td>
+                                    <td>{{ answer.question.correct_answer }}</td>
+                                    <td>
+                                        {% if answer.is_correct is none %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif answer.is_correct %}
+                                            <span class="badge bg-success">✓ Correct</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">✗ Incorrect</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ answer.points_awarded or 0 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-3">
+                    <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

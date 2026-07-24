@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Create Question{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-plus-circle"></i> Create New Question</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() if form }}
+                    
+                    <!-- Add Course Selection -->
+                    <div class="mb-3">
+                        <label for="course_id" class="form-label">Course *</label>
+                        {{ form.course_id(class="form-select", id="course_id") }}
+                        {% if form.course_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.course_id.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Select the course this question belongs to.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="question_text" class="form-label">Question *</label>
+                        {{ form.question_text(class="form-control", rows=3) }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="question_type" class="form-label">Question Type *</label>
+                                {{ form.question_type(class="form-select", id="question_type") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="difficulty_level" class="form-label">Difficulty</label>
+                                {{ form.difficulty_level(class="form-select") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="points" class="form-label">Points</label>
+                                {{ form.points(class="form-control") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3" id="options_field">
+                                <label for="options" class="form-label">Options (comma separated)</label>
+                                {{ form.options(class="form-control", placeholder="Option A, Option B, Option C, Option D") }}
+                                <div class="form-text">For multiple choice questions only</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="correct_answer" class="form-label">Correct Answer *</label>
+                        {{ form.correct_answer(class="form-control") }}
+                        <div class="form-text">For multiple choice, enter the exact option text.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="explanation" class="form-label">Explanation (Optional)</label>
+                        {{ form.explanation(class="form-control", rows=2) }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="media_url" class="form-label">Media URL (Optional)</label>
+                        {{ form.media_url(class="form-control", placeholder="https://example.com/image.jpg") }}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Create Question</button>
+                        <a href="{{ url_for('teacher.question_bank') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('question_type').addEventListener('change', function() {
+    const optionsField = document.getElementById('options_field');
+    if (this.value === 'multiple_choice') {
+        optionsField.style.display = 'block';
+    } else {
+        optionsField.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

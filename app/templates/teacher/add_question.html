@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Add Question to {{ exam.exam_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Add Question to {{ exam.exam_title }}</h2>
+    <div>
+        <span class="badge bg-info">Course: {{ exam.course.course_code }}</span>
+        <a href="{{ url_for('teacher.manage_exam', exam_id=exam.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Exam
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() if form }}
+                    
+                    <!-- Hidden field to store course_id -->
+                    <input type="hidden" name="course_id" value="{{ exam.course_id }}">
+                    
+                    <div class="mb-3">
+                        <label for="question_text" class="form-label">Question</label>
+                        {{ form.question_text(class="form-control", rows=3) }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="question_type" class="form-label">Question Type</label>
+                                {{ form.question_type(class="form-select", id="question_type") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="difficulty_level" class="form-label">Difficulty</label>
+                                {{ form.difficulty_level(class="form-select") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="points" class="form-label">Points</label>
+                                {{ form.points(class="form-control") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3" id="options_field">
+                                <label for="options" class="form-label">Options (comma separated)</label>
+                                {{ form.options(class="form-control", placeholder="A, B, C, D") }}
+                                <div class="form-text">For multiple choice questions only</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="correct_answer" class="form-label">Correct Answer</label>
+                        {{ form.correct_answer(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="explanation" class="form-label">Explanation (Optional)</label>
+                        {{ form.explanation(class="form-control", rows=2) }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="media_url" class="form-label">Media URL (Optional)</label>
+                        {{ form.media_url(class="form-control", placeholder="https://example.com/image.jpg") }}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Add Question</button>
+                        <a href="{{ url_for('teacher.manage_exam', exam_id=exam.id) }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('question_type').addEventListener('change', function() {
+    const optionsField = document.getElementById('options_field');
+    if (this.value === 'multiple_choice') {
+        optionsField.style.display = 'block';
+    } else {
+        optionsField.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

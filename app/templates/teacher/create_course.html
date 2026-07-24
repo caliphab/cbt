@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Create Course{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-plus-circle"></i> Create New Course</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() if form }}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="course_code" class="form-label">Course Code *</label>
+                                {{ form.course_code(class="form-control", placeholder="e.g., CS101") }}
+                                <div class="form-text">A unique identifier for the course (e.g., MATH101, ENG201)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="class_level" class="form-label">Class Level *</label>
+                                {{ form.class_level(class="form-control", placeholder="e.g., SS1, Grade 10") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="course_name" class="form-label">Course Name *</label>
+                        {{ form.course_name(class="form-control", placeholder="e.g., Introduction to Computer Science") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        {{ form.description(class="form-control", rows=3, placeholder="Brief description of the course") }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="semester" class="form-label">Semester *</label>
+                                {{ form.semester(class="form-select") }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="session_year" class="form-label">Session Year *</label>
+                                {{ form.session_year(class="form-control", placeholder="e.g., 2025/2026") }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3 form-check mt-4">
+                                {{ form.is_active(class="form-check-input") }}
+                                <label class="form-check-label" for="is_active">Active</label>
+                                <div class="form-text">Inactive courses won't be visible to students</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Course
+                        </button>
+                        <a href="{{ url_for('teacher.courses') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

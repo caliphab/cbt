@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.course_code }} - {{ course.course_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        {{ course.course_code }} - {{ course.course_name }}
+        <span class="badge bg-{{ 'success' if course.is_active else 'danger' }}">
+            {{ 'Active' if course.is_active else 'Inactive' }}
+        </span>
+    </h2>
+    <div>
+        <a href="{{ url_for('teacher.edit_course', course_id=course.id) }}" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> Edit Course
+        </a>
+        <a href="{{ url_for('teacher.courses') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Course Info -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5>Course Details</h5>
+                <dl class="row">
+                    <dt class="col-sm-3">Class Level</dt>
+                    <dd class="col-sm-9">{{ course.class_level }}</dd>
+                    
+                    <dt class="col-sm-3">Semester</dt>
+                    <dd class="col-sm-9">{{ course.semester }}</dd>
+                    
+                    <dt class="col-sm-3">Session</dt>
+                    <dd class="col-sm-9">{{ course.session_year }}</dd>
+                    
+                    <dt class="col-sm-3">Description</dt>
+                    <dd class="col-sm-9">{{ course.description or 'No description provided.' }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <!-- Exams -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Exams</h5>
+                <a href="{{ url_for('teacher.create_exam') }}" class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> Create Exam
+                </a>
+            </div>
+            <div class="card-body">
+                {% if exams %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Questions</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exam in exams %}
+                                    <tr>
+                                        <td>{{ exam.exam_title }}</td>
+                                        <td><span class="badge bg-info">{{ exam.exam_type }}</span></td>
+                                        <td>{{ exam.total_questions }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if exam.is_active else 'danger' }}">
+                                                {{ 'Active' if exam.is_active else 'Inactive' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('teacher.manage_exam', exam_id=exam.id) }}" 
+                                               class="btn btn-sm btn-primary">
+                                                Manage
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No exams created for this course yet.</p>
+                    <a href="{{ url_for('teacher.create_exam') }}" class="btn btn-primary btn-sm">
+                        Create First Exam
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Exams</span>
+                    <span class="badge bg-primary">{{ exams|length }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Questions</span>
+                    <span class="badge bg-info">{{ questions|length }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Status</span>
+                    <span class="badge bg-{{ 'success' if course.is_active else 'danger' }}">
+                        {{ 'Active' if course.is_active else 'Inactive' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('teacher.create_exam') }}" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Create Exam
+                    </a>
+                    <a href="{{ url_for('teacher.create_question') }}" class="btn btn-info text-white">
+                        <i class="bi bi-plus-circle"></i> Add Question
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Take Exam - {{ exam.exam_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Main Exam Area -->
+    <div class="col-md-9">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>{{ exam.exam_title }}</h5>
+                <div>
+                    <span class="badge bg-info">{{ exam.exam_type }}</span>
+                    <span class="badge bg-primary">{{ exam.duration_minutes }} minutes</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 
+                    <strong>Instructions:</strong> {{ exam.instructions or 'Read each question carefully and select the best answer.' }}
+                </div>
+                
+                {% if attempt %}
+                <!-- Timer -->
+                <div class="text-center mb-3">
+                    <div class="display-4" id="exam-timer" 
+                         data-attempt-id="{{ attempt.id }}" 
+                         data-exam-id="{{ exam.id }}"
+                         data-time-remaining="{{ attempt.time_remaining_seconds }}">
+                        {{ "%02d:%02d"|format(attempt.time_remaining_seconds // 60, attempt.time_remaining_seconds % 60) }}
+                    </div>
+                    <p class="text-muted">Time Remaining</p>
+                </div>
+                
+                <!-- Progress -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span id="progress-text">0/{{ question_ids|length }} answered</span>
+                        <span>{{ question_ids|length }} questions total</span>
+                    </div>
+                    <div class="progress">
+                        <div id="progress-bar" class="progress-bar" role="progressbar" 
+                             style="width: 0%" aria-valuenow="0" aria-valuemin="0" 
+                             aria-valuemax="{{ question_ids|length }}">
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Start Exam Button -->
+                <div class="text-center py-4">
+                    <h4>Ready to start the exam?</h4>
+                    <p>You have {{ exam.duration_minutes }} minutes to complete {{ exam.total_questions }} questions.</p>
+                    <button type="button" class="btn btn-primary btn-lg" onclick="startExam({{ exam.id }})">
+                        <i class="bi bi-play-circle"></i> Start Exam
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Questions -->
+        {% if attempt and question_ids %}
+        <div class="card">
+            <div class="card-body">
+                <!-- Question Counter -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="question-counter">Question <span id="current-question-num">1</span> of {{ question_ids|length }}</h6>
+                    <div>
+                        <span id="question-status" class="badge bg-secondary">Unanswered</span>
+                    </div>
+                </div>
+                
+                <!-- Question Display -->
+                <div id="question-container">
+                    {% for question_id in question_ids %}
+                        {% set question = Question.query.get(question_id) %}
+                        {% if question %}
+                        {% set answered = question_id in answered_questions %}
+                        {% set answer = None %}
+                        {% if answered %}
+                            {% set answer = attempt.answers.filter_by(question_id=question_id).first() %}
+                        {% endif %}
+                        
+                        <div class="question-item-wrapper {% if loop.index > 1 %}d-none{% endif %}" 
+                             id="question-wrapper-{{ question_id }}" 
+                             data-question-id="{{ question_id }}"
+                             data-question-index="{{ loop.index }}">
+                            <div class="question-item {% if answered %}answered{% endif %}" 
+                                 id="question-{{ question_id }}">
+                                <p class="question-text">{{ question.question_text }}</p>
+                                
+                                <!-- Answer Options -->
+                                <div class="answer-options">
+                                    {% if question.question_type == 'multiple_choice' %}
+                                        {% for option in question.options %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" 
+                                                       name="question_{{ question_id }}" 
+                                                       id="q{{ question_id }}_option{{ loop.index }}" 
+                                                       value="{{ option }}"
+                                                       {% if answered and answer and option == answer.selected_answer %}
+                                                       checked
+                                                       {% endif %}
+                                                       onchange="saveAnswer({{ question_id }}, this.value)">
+                                                <label class="form-check-label" for="q{{ question_id }}_option{{ loop.index }}">
+                                                    {{ option }}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    
+                                    {% elif question.question_type == 'true_false' %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="question_{{ question_id }}" 
+                                                   id="q{{ question_id }}_true" value="True"
+                                                   {% if answered and answer and answer.selected_answer == 'True' %}
+                                                   checked
+                                                   {% endif %}
+                                                   onchange="saveAnswer({{ question_id }}, this.value)">
+                                            <label class="form-check-label" for="q{{ question_id }}_true">True</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="question_{{ question_id }}" 
+                                                   id="q{{ question_id }}_false" value="False"
+                                                   {% if answered and answer and answer.selected_answer == 'False' %}
+                                                   checked
+                                                   {% endif %}
+                                                   onchange="saveAnswer({{ question_id }}, this.value)">
+                                            <label class="form-check-label" for="q{{ question_id }}_false">False</label>
+                                        </div>
+                                    
+                                    {% elif question.question_type == 'fill_blank' %}
+                                        <div class="mb-3">
+                                            <input type="text" class="form-control" 
+                                                   name="question_{{ question_id }}" 
+                                                   placeholder="Type your answer here..."
+                                                   {% if answered and answer %}
+                                                   value="{{ answer.selected_answer }}"
+                                                   {% endif %}
+                                                   onchange="saveAnswer({{ question_id }}, this.value)">
+                                        </div>
+                                    
+                                    {% elif question.question_type == 'essay' %}
+                                        <div class="mb-3">
+                                            <textarea class="form-control" rows="4" 
+                                                      name="question_{{ question_id }}" 
+                                                      placeholder="Write your answer here..."
+                                                      onchange="saveAnswer({{ question_id }}, this.value)">{% if answered and answer %}{{ answer.selected_answer }}{% endif %}</textarea>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Question Meta -->
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-star"></i> {{ question.difficulty_level }} 
+                                        | <i class="bi bi-award"></i> {{ question.points }} points
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Navigation Buttons -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <button id="prev-btn" class="btn btn-secondary" onclick="navigateQuestion('prev')" disabled>
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </button>
+                    <span id="current-progress" class="text-muted">1 / {{ question_ids|length }}</span>
+                    <button id="next-btn" class="btn btn-primary" onclick="navigateQuestion('next')">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="text-center mt-4">
+                    <button class="btn btn-success btn-lg" onclick="submitExam()">
+                        <i class="bi bi-check-circle"></i> Submit Exam
+                    </button>
+                    <button class="btn btn-warning btn-lg ms-2" onclick="autoSaveProgress()">
+                        <i class="bi bi-save"></i> Save Progress
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Navigation Sidebar -->
+    {% if attempt and question_ids %}
+    <div class="col-md-3">
+        <div class="exam-nav card">
+            <div class="card-body">
+                <h6 class="text-center">Question Navigation</h6>
+                <div class="question-nav">
+                    {% for question_id in question_ids %}
+                        <div class="question-nav-btn {% if question_id in answered_questions %}answered{% endif %}" 
+                             data-question-id="{{ question_id }}"
+                             data-index="{{ loop.index }}"
+                             onclick="goToQuestion({{ loop.index }})">
+                            {{ loop.index }}
+                        </div>
+                    {% endfor %}
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <span><span class="badge bg-success">●</span> Answered</span>
+                    <span><span class="badge bg-secondary">●</span> Unanswered</span>
+                </div>
+                <button class="btn btn-danger w-100 mt-3" onclick="submitExam()">
+                    <i class="bi bi-send"></i> Submit
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+{% if attempt %}
+// ============ QUESTION NAVIGATION ============
+let currentIndex = 0;
+const totalQuestions = {{ question_ids|length }};
+const questionWrappers = document.querySelectorAll('.question-item-wrapper');
+const questionNavBtns = document.querySelectorAll('.question-nav-btn');
+
+function goToQuestion(index) {
+    const zeroBasedIndex = index - 1;
+    if (zeroBasedIndex < 0 || zeroBasedIndex >= totalQuestions) return;
+    
+    questionWrappers.forEach(el => el.classList.add('d-none'));
+    if (questionWrappers[zeroBasedIndex]) {
+        questionWrappers[zeroBasedIndex].classList.remove('d-none');
+    }
+    currentIndex = zeroBasedIndex;
+    updateNavigationUI();
+}
+
+function navigateQuestion(direction) {
+    let newIndex = currentIndex;
+    if (direction === 'next') newIndex = currentIndex + 1;
+    else if (direction === 'prev') newIndex = currentIndex - 1;
+    if (newIndex < 0 || newIndex >= totalQuestions) return;
+    goToQuestion(newIndex + 1);
+}
+
+function updateNavigationUI() {
+    const currentNum = currentIndex + 1;
+    document.getElementById('current-question-num').textContent = currentNum;
+    document.getElementById('current-progress').textContent = `${currentNum} / ${totalQuestions}`;
+    
+    document.getElementById('prev-btn').disabled = currentIndex === 0;
+    const nextBtn = document.getElementById('next-btn');
+    nextBtn.textContent = currentIndex === totalQuestions - 1 ? 'Finish' : 'Next';
+    nextBtn.innerHTML = currentIndex === totalQuestions - 1 ? 
+        '<i class="bi bi-check-circle"></i> Finish' : 
+        'Next <i class="bi bi-chevron-right"></i>';
+    
+    const currentWrapper = questionWrappers[currentIndex];
+    if (currentWrapper) {
+        const questionId = parseInt(currentWrapper.dataset.questionId);
+        const isAnswered = document.getElementById(`question-${questionId}`).classList.contains('answered');
+        const statusBadge = document.getElementById('question-status');
+        statusBadge.className = `badge bg-${isAnswered ? 'success' : 'secondary'}`;
+        statusBadge.textContent = isAnswered ? 'Answered' : 'Unanswered';
+    }
+    
+    questionNavBtns.forEach(btn => {
+        btn.classList.remove('active');
+        if (parseInt(btn.dataset.index) === currentNum) btn.classList.add('active');
+    });
+}
+
+// ============ SAVE ANSWER ============
+function saveAnswer(questionId, selectedAnswer) {
+    const timeSpent = calculateTimeSpent(questionId);
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    const token = csrfToken ? csrfToken.content : '';
+
+    $.ajax({
+        url: '/student/exam/submit_answer',
+        method: 'POST',
+        contentType: 'application/json',
+        headers: {
+            'X-CSRFToken': token
+        },
+        data: JSON.stringify({
+            attempt_id: {{ attempt.id }},
+            question_id: questionId,
+            selected_answer: selectedAnswer,
+            time_spent: timeSpent
+        }),
+        success: function(response) {
+            if (response.success) {
+                const questionElement = document.getElementById(`question-${questionId}`);
+                if (questionElement) questionElement.classList.add('answered');
+                document.querySelectorAll('.question-nav-btn').forEach(function(btn) {
+                    if (parseInt(btn.dataset.questionId) === questionId) {
+                        btn.classList.add('answered');
+                    }
+                });
+                updateProgress();
+                updateNavigationUI();
+            }
+        },
+        error: function(xhr) {
+            console.error('Error saving answer:', xhr);
+        }
+    });
+}
+
+// ============ PROGRESS ============
+function updateProgress() {
+    const total = document.querySelectorAll('.question-item').length;
+    const answered = document.querySelectorAll('.question-item.answered').length;
+    const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
+    document.getElementById('progress-text').textContent = `${answered}/${total} answered`;
+    document.getElementById('progress-bar').style.width = `${percentage}%`;
+    document.getElementById('progress-bar').setAttribute('aria-valuenow', percentage);
+}
+
+// ============ TIMER ============
+let timeRemaining = 0;
+const timerElement = document.getElementById('exam-timer');
+let timerInterval = null;
+
+function startTimer() {
+    if (!timerElement) {
+        console.error('❌ Timer element not found!');
+        return;
+    }
+    
+    timeRemaining = parseInt(timerElement.dataset.timeRemaining) || 0;
+    console.log('⏱️ Timer started with:', timeRemaining, 'seconds');
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    updateTimerDisplay();
+    
+    timerInterval = setInterval(function() {
+        timeRemaining--;
+        
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            alert('⏰ Time is up! Your exam will be submitted automatically.');
+            submitExam();
+            return;
+        }
+        
+        updateTimerDisplay();
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    if (!timerElement) return;
+    
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    if (timeRemaining < 300) {
+        timerElement.classList.add('text-danger');
+        timerElement.style.color = '#dc3545';
+    } else {
+        timerElement.classList.remove('text-danger');
+        timerElement.style.color = '';
+    }
+}
+
+// ============ TIME TRACKING ============
+window.questionStartTimes = {};
+
+function calculateTimeSpent(questionId) {
+    if (!window.questionStartTimes[questionId]) window.questionStartTimes[questionId] = Date.now();
+    const elapsed = Math.floor((Date.now() - window.questionStartTimes[questionId]) / 1000);
+    window.questionStartTimes[questionId] = Date.now();
+    return elapsed;
+}
+
+// ============ AUTO SAVE ============
+setInterval(autoSaveProgress, 30000);
+
+function autoSaveProgress() {
+    document.querySelectorAll('.question-item').forEach(function(q) {
+        const questionId = parseInt(q.dataset.questionId);
+        const input = q.querySelector('input:checked, input[type="text"], textarea');
+        if (input && input.value) saveAnswer(questionId, input.value);
+    });
+}
+
+// ============ SUBMIT EXAM ============
+function submitExam() {
+    // Clear timer
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    const answered = document.querySelectorAll('.question-item.answered').length;
+    const total = document.querySelectorAll('.question-item').length;
+
+    if (answered < total) {
+        if (!confirm(`You have answered ${answered} out of ${total} questions.\n\n${total - answered} question(s) are unanswered.\n\nAre you sure you want to submit?`)) {
+            startTimer();
+            return;
+        }
+    } else {
+        if (!confirm('You have answered all questions. Submit your exam?')) {
+            startTimer();
+            return;
+        }
+    }
+
+    const submitBtn = document.querySelector('.btn-success');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Submitting...';
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    const token = csrfToken ? csrfToken.content : '';
+
+    fetch('/student/exam/submit/{{ attempt.id }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': token
+        }
+    })
+    .then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.error || `Server error: ${response.status}`);
+        }
+        return data;
+    })
+    .then(data => {
+        if (data.success) {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Submit Exam';
+            }
+            window.location.href = data.redirect;
+        } else {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Submit Exam';
+            }
+            alert('Error submitting exam: ' + (data.error || 'Unknown error'));
+            startTimer();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Submit Exam';
+        }
+        alert('Error submitting exam: ' + error.message);
+        startTimer();
+    });
+}
+
+// ============ EVENT LISTENERS ============
+window.addEventListener('beforeunload', function(e) {
+    if (document.querySelectorAll('.question-item:not(.answered)').length > 0) {
+        e.preventDefault();
+        e.returnValue = 'You have unanswered questions. Are you sure you want to leave?';
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM loaded - initializing exam');
+    
+    if (typeof goToQuestion === 'function') {
+        goToQuestion(1);
+    }
+    
+    startTimer();
+    
+    if (typeof updateProgress === 'function') {
+        updateProgress();
+    }
+    
+    document.querySelectorAll('.question-item').forEach(function(q) {
+        const questionId = parseInt(q.dataset.questionId);
+        if (!window.questionStartTimes) {
+            window.questionStartTimes = {};
+        }
+        window.questionStartTimes[questionId] = Date.now();
+    });
+});
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        const token = csrfToken ? csrfToken.content : '';
+        
+        fetch('/student/log_activity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': token
+            },
+            body: JSON.stringify({
+                action: 'SWITCH_TAB',
+                exam_id: {{ exam.id }},
+                attempt_id: {{ attempt.id }}
+            })
+        });
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn').disabled) navigateQuestion('prev');
+    else if (e.key === 'ArrowRight' && !document.getElementById('next-btn').disabled) navigateQuestion('next');
+});
+{% endif %}
+
+// ============ START EXAM (No Attempt Yet) ============
+function startExam(examId) {
+    const startBtn = document.querySelector('.btn-primary.btn-lg');
+    if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Starting...';
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    const token = csrfToken ? csrfToken.content : '';
+
+    fetch(`/student/exam/start/${examId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRFToken': token
+        },
+        credentials: 'same-origin'
+    })
+    .then(async response => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.error || `Server error: ${response.status}`);
+        }
+        return data;
+    })
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect;
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="bi bi-play-circle"></i> Start Exam';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error starting exam: ' + error.message);
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<i class="bi bi-play-circle"></i> Start Exam';
+        }
+    });
+}
+</script>
+
+<style>
+.question-item {
+    border-left: 4px solid #dee2e6;
+    transition: border-color 0.3s ease;
+    padding: 15px;
+}
+.question-item.answered {
+    border-left-color: #28a745;
+}
+.question-item-wrapper {
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.question-nav-btn {
+    padding: 8px 4px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 2px;
+    font-size: 14px;
+}
+.question-nav-btn:hover {
+    background: #e9ecef;
+}
+.question-nav-btn.answered {
+    background: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+.question-nav-btn.active {
+    background: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+    transform: scale(1.1);
+}
+#exam-timer {
+    font-size: 2.5rem;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    transition: color 0.5s ease;
+}
+.answer-options {
+    margin-top: 10px;
+}
+.form-check {
+    padding: 8px 0;
+}
+.question-counter {
+    font-weight: bold;
+    color: #0d6efd;
+}
+#question-status {
+    font-size: 0.9rem;
+    padding: 5px 12px;
+}
+</style>
+{% endblock %}

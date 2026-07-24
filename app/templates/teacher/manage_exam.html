@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Exam - {{ exam.exam_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ exam.exam_title }}</h2>
+    <div>
+        <a href="{{ url_for('teacher.add_question', exam_id=exam.id) }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Add Question
+        </a>
+        <a href="{{ url_for('teacher.exam_results', exam_id=exam.id) }}" class="btn btn-info text-white">
+            <i class="bi bi-bar-chart"></i> Results
+        </a>
+        <a href="{{ url_for('teacher.manage_grades', exam_id=exam.id) }}" class="btn btn-warning">
+            <i class="bi bi-trophy"></i> Grades
+        </a>
+        <button onclick="deleteExam({{ exam.id }})" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Delete Exam
+        </button>
+        <a href="{{ url_for('teacher.exams') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5>Exam Details</h5>
+                <dl class="row">
+                    <dt class="col-sm-3">Course</dt>
+                    <dd class="col-sm-9">{{ exam.course.course_code }} - {{ exam.course.course_name }}</dd>
+                    
+                    <dt class="col-sm-3">Type</dt>
+                    <dd class="col-sm-9"><span class="badge bg-info">{{ exam.exam_type }}</span></dd>
+                    
+                    <dt class="col-sm-3">Duration</dt>
+                    <dd class="col-sm-9">{{ exam.duration_minutes }} minutes</dd>
+                    
+                    <dt class="col-sm-3">Start Time</dt>
+                    <dd class="col-sm-9">{{ exam.start_time }}</dd>
+                    
+                    <dt class="col-sm-3">End Time</dt>
+                    <dd class="col-sm-9">{{ exam.end_time }}</dd>
+                    
+                    <dt class="col-sm-3">Max Attempts</dt>
+                    <dd class="col-sm-9">{{ exam.max_attempts }}</dd>
+                    
+                    <dt class="col-sm-3">Passing Score</dt>
+                    <dd class="col-sm-9">{{ exam.passing_score }}%</dd>
+                    
+                    <dt class="col-sm-3">Status</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-{{ 'success' if exam.is_active else 'danger' }}">
+                            {{ 'Active' if exam.is_active else 'Inactive' }}
+                        </span>
+                    </dd>
+                    
+                    <dt class="col-sm-3">Questions</dt>
+                    <dd class="col-sm-9">{{ questions|length }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3>{{ questions|length }}</h3>
+                <p class="text-muted">Total Questions</p>
+                <a href="{{ url_for('teacher.add_question', exam_id=exam.id) }}" class="btn btn-success w-100">
+                    <i class="bi bi-plus-circle"></i> Add Question
+                </a>
+                <hr>
+                <button onclick="deleteExam({{ exam.id }})" class="btn btn-danger w-100">
+                    <i class="bi bi-trash"></i> Delete Entire Exam
+                </button>
+                <p class="text-muted small mt-2">This action cannot be undone!</p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <span>Total Questions</span>
+                    <span class="badge bg-primary">{{ questions|length }}</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <span>Status</span>
+                    <span class="badge bg-{{ 'success' if exam.is_active else 'danger' }}">
+                        {{ 'Active' if exam.is_active else 'Inactive' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Questions</h5>
+        <span class="badge bg-primary">{{ questions|length }} questions</span>
+    </div>
+    <div class="card-body">
+        {% if questions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Question</th>
+                            <th>Type</th>
+                            <th>Points</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam_question in questions %}
+                            <tr>
+                                <td>{{ exam_question.question_order }}</td>
+                                <td>{{ exam_question.question.question_text|truncate(100) }}</td>
+                                <td><span class="badge bg-secondary">{{ exam_question.question.question_type }}</span></td>
+                                <td>{{ exam_question.weight }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('teacher.edit_question', question_id=exam_question.question.id) }}" 
+                                           class="btn btn-primary" title="Edit Question">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button class="btn btn-danger" onclick="removeQuestion({{ exam.id }}, {{ exam_question.question.id }})" title="Remove from Exam">
+                                            <i class="bi bi-dash-circle"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted">No questions added to this exam yet.</p>
+                <a href="{{ url_for('teacher.add_question', exam_id=exam.id) }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add Your First Question
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function deleteExam(examId) {
+    if (confirm('⚠️ Are you sure you want to delete this exam?\n\nThis will permanently delete:\n- All exam questions\n- All student attempts\n- All student answers\n- The exam itself\n\nThis action CANNOT be undone!')) {
+        const btn = document.querySelector('.btn-danger');
+        if (btn) {
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+            btn.disabled = true;
+        }
+        
+        fetch(`/teacher/exam/${examId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}',
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                return response.json().then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                    } else {
+                        window.location.href = '/teacher/exams';
+                    }
+                });
+            }
+        }).catch(error => {
+            alert('Error deleting exam: ' + error);
+            if (btn) {
+                btn.innerHTML = '<i class="bi bi-trash"></i> Delete Exam';
+                btn.disabled = false;
+            }
+        });
+    }
+}
+
+function removeQuestion(examId, questionId) {
+    if (confirm('Are you sure you want to remove this question from the exam?')) {
+        fetch(`/teacher/exam/${examId}/question/${questionId}/remove`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}'
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error removing question.');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

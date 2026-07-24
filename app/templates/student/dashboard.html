@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Welcome, {{ current_user.full_name }}</h5>
+                <p class="card-text">
+                    <i class="bi bi-mortarboard"></i> {{ student.class_level }}<br>
+                    <i class="bi bi-person-badge"></i> {{ student.admission_number }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3>{{ total_exams_taken }}</h3>
+                        <p class="text-muted">Exams Taken</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3>{{ "%.1f"|format(average_score) }}%</h3>
+                        <p class="text-muted">Average Score</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3>{{ upcoming_exams|length }}</h3>
+                        <p class="text-muted">Upcoming Exams</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Upcoming Exams</h5>
+            </div>
+            <div class="card-body">
+                {% if upcoming_exams %}
+                    {% for exam in upcoming_exams %}
+                        <div class="exam-item mb-3">
+                            <h6>{{ exam.exam_title }}</h6>
+                            <p class="text-muted small">
+                                <i class="bi bi-calendar"></i> {{ exam.start_time.strftime('%b %d, %Y %H:%M') }}
+                            </p>
+                            <a href="{{ url_for('student.take_exam', exam_id=exam.id) }}" class="btn btn-sm btn-primary">
+                                View Details
+                            </a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No upcoming exams.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Attempts</h5>
+            </div>
+            <div class="card-body">
+                {% if attempts %}
+                    {% for attempt in attempts %}
+                        <div class="attempt-item mb-3">
+                            <h6>{{ attempt.exam.exam_title }}</h6>
+                            <p class="text-muted small">
+                                <i class="bi bi-clock"></i> {{ attempt.start_time.strftime('%b %d, %Y') }}
+                                <span class="badge bg-{{ 'success' if attempt.status in ['submitted', 'graded'] else 'warning' }}">
+                                    {{ attempt.status }}
+                                </span>
+                                {% if attempt.score %}
+                                    <span class="badge bg-info">Score: {{ "%.1f"|format(attempt.score) }}</span>
+                                {% endif %}
+                            </p>
+                            <a href="{{ url_for('student.view_result', attempt_id=attempt.id) }}" class="btn btn-sm btn-outline-primary">
+                                View Results
+                            </a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No exam attempts yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

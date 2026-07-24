@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Grades - {{ exam.exam_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Grade Boundaries - {{ exam.exam_title }}</h2>
+    <a href="{{ url_for('teacher.manage_exam', exam_id=exam.id) }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Exam
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Add Grade Boundary</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() if form }}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="min_score" class="form-label">Min Score (%)</label>
+                                {{ form.min_score(class="form-control") }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="max_score" class="form-label">Max Score (%)</label>
+                                {{ form.max_score(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="letter_grade" class="form-label">Letter Grade</label>
+                        {{ form.letter_grade(class="form-control", placeholder="A, B, C, D, F") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="remark" class="form-label">Remark</label>
+                        {{ form.remark(class="form-control", placeholder="Excellent, Good, Pass, Fail") }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Add Grade Boundary</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Existing Grade Boundaries</h5>
+            </div>
+            <div class="card-body">
+                {% if boundaries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Grade</th>
+                                    <th>Min Score</th>
+                                    <th>Max Score</th>
+                                    <th>Remark</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for boundary in boundaries %}
+                                    <tr>
+                                        <td><strong>{{ boundary.letter_grade }}</strong></td>
+                                        <td>{{ boundary.min_score }}%</td>
+                                        <td>{{ boundary.max_score }}%</td>
+                                        <td>{{ boundary.remark or '-' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No grade boundaries set yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

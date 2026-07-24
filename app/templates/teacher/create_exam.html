@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Create Exam{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-plus-circle"></i> Create New Exam</h5>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h6>Please fix the following errors:</h6>
+                        <ul>
+                            {% for field, errors in form.errors.items() %}
+                                <li><strong>{{ field }}:</strong> {{ ', '.join(errors) }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <form method="POST" id="examForm">
+                    {{ form.csrf_token }}
+                    
+                    <!-- Course Selection -->
+                    <div class="mb-3">
+                        <label for="course_id" class="form-label">Course *</label>
+                        <select class="form-select" id="course_id" name="course_id" required>
+                            <option value="">-- Select a course --</option>
+                            {% for choice in form.course_id.choices %}
+                                <option value="{{ choice[0] }}">{{ choice[1] }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select the course this exam belongs to.</div>
+                    </div>
+                    
+                    <!-- Exam Title -->
+                    <div class="mb-3">
+                        <label for="exam_title" class="form-label">Exam Title *</label>
+                        <input type="text" class="form-control" id="exam_title" name="exam_title" 
+                               placeholder="e.g., Midterm Exam - Chapter 1-5" required>
+                    </div>
+                    
+                    <!-- Exam Type and Duration -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="exam_type" class="form-label">Exam Type *</label>
+                                <select class="form-select" id="exam_type" name="exam_type" required>
+                                    <option value="test">Quiz</option>
+                                    <option value="exam">Mock</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="duration_minutes" class="form-label">Duration (minutes) *</label>
+                                <input type="number" class="form-control" id="duration_minutes" 
+                                       name="duration_minutes" min="1" value="60" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Start and End Time -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="start_time" class="form-label">Start Time *</label>
+                                <input type="datetime-local" class="form-control" id="start_time" 
+                                       name="start_time" required>
+                                <div class="form-text">Format: MM-DD-YYYY HH:MM</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="end_time" class="form-label">End Time *</label>
+                                <input type="datetime-local" class="form-control" id="end_time" 
+                                       name="end_time" required>
+                                <div class="form-text">Format: MM-DD-YYYY HH:MM</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label">Instructions</label>
+                        <textarea class="form-control" id="instructions" name="instructions" 
+                                  rows="3" placeholder="Enter exam instructions for students..."></textarea>
+                    </div>
+                    
+                    <!-- Exam Settings -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="max_attempts" class="form-label">Max Attempts</label>
+                                <input type="number" class="form-control" id="max_attempts" 
+                                       name="max_attempts" min="1" value="1">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="passing_score" class="form-label">Passing Score (%)</label>
+                                <input type="number" class="form-control" id="passing_score" 
+                                       name="passing_score" min="0" max="100" value="50">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3 form-check mt-4">
+                                <input type="checkbox" class="form-check-input" id="is_active" 
+                                       name="is_active" checked>
+                                <label class="form-check-label" for="is_active">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Options -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="randomize_questions" 
+                                       name="randomize_questions">
+                                <label class="form-check-label" for="randomize_questions">Randomize Question Order</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="show_results_immediately" 
+                                       name="show_results_immediately">
+                                <label class="form-check-label" for="show_results_immediately">Show Results Immediately</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Exam
+                        </button>
+                        <a href="{{ url_for('teacher.exams') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default datetime values
+    const now = new Date();
+    
+    // Start time: 1 hour from now
+    const startTime = new Date(now.getTime() + 60 * 60 * 1000);
+    // End time: 2 hours from now (1 hour duration by default)
+    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+    
+    const formatDateTime = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
+    const startInput = document.getElementById('start_time');
+    const endInput = document.getElementById('end_time');
+    
+    if (startInput && !startInput.value) {
+        startInput.value = formatDateTime(startTime);
+    }
+    if (endInput && !endInput.value) {
+        endInput.value = formatDateTime(endTime);
+    }
+});
+</script>
+{% endblock %}

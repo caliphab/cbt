@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}System Statistics{% endblock %}
+
+{% block content %}
+<h2>System Statistics</h2>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>User Growth (Last 30 Days)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="userChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Exam Attempts by Status</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="attemptChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// User Growth Chart
+const userCtx = document.getElementById('userChart').getContext('2d');
+new Chart(userCtx, {
+    type: 'line',
+    data: {
+        labels: [
+            {% for item in users_by_day %}
+                '{{ item.date }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'New Users',
+            data: [
+                {% for item in users_by_day %}
+                    {{ item.count }},
+                {% endfor %}
+            ],
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true
+            }
+        }
+    }
+});
+
+// Attempt Status Chart
+const attemptCtx = document.getElementById('attemptChart').getContext('2d');
+new Chart(attemptCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [
+            {% for item in attempts_by_status %}
+                '{{ item.status }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for item in attempts_by_status %}
+                    {{ item.count }},
+                {% endfor %}
+            ],
+            backgroundColor: ['#007bff', '#28a745', '#dc3545', '#ffc107']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
